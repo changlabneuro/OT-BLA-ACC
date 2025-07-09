@@ -134,66 +134,6 @@ session_pref_index <- binned_data %>%
          contexts = ifelse(is.na(sb_index), 'othernone', 'selfboth')) %>%
   filter(contexts == 'othernone')  # Focus on other-none context trials
 
-# Initialize an empty dataframe to store results
-bin_wilcox_df <- data.frame()
-
-bin_stats_data <- session_pref_index %>% 
-  filter(contexts == 'selfboth', administration == 'post')
-
-# Get unique bins
-unique_bins <- sort(unique(bin_stats_data$bins))
-
-# Run Wilcoxon rank-sum tests for each combination of state and bins
-for (current_state in c("high", "low")) {
-  for (current_bin in unique_bins) {
-    # Subset data for the current bin and state
-    bin_data <- bin_stats_data %>% 
-      filter(bins == current_bin, 
-             state == current_state)
-    
-    # Check if there are both drug conditions
-    if (length(unique(bin_data$drugs)) > 1) {
-      # Split data by drug condition
-      oxytocin_data <- bin_data %>% filter(drugs == "oxytocin")
-      saline_data <- bin_data %>% filter(drugs == "saline")
-      
-      # Only proceed if we have enough data for both conditions
-      if (nrow(oxytocin_data) > 0 && nrow(saline_data) > 0) {
-        # Run Wilcoxon rank-sum test
-        wilcox_result <- wilcox.test(
-          preference_index ~ drugs, 
-          data = bin_data,
-          exact = FALSE,  # Use normal approximation for larger samples
-          paired = FALSE  # Not paired since comparing between subjects
-        )
-        
-        # Calculate effect size (difference in medians)
-        oxt_median <- median(oxytocin_data$preference_index, na.rm = TRUE)
-        sal_median <- median(saline_data$preference_index, na.rm = TRUE)
-        effect_size <- oxt_median - sal_median
-        
-        # Create a row for results
-        result_row <- data.frame(
-          bin = current_bin,
-          state = current_state,
-          contexts = unique(bin_data$contexts)[1],
-          oxytocin_median = oxt_median,
-          saline_median = sal_median,
-          effect_size = effect_size,
-          statistic = wilcox_result$statistic,
-          p.value = wilcox_result$p.value,
-          n_oxytocin = nrow(oxytocin_data),
-          n_saline = nrow(saline_data)
-        )
-        
-        # Add to results dataframe
-        bin_wilcox_df <- rbind(bin_wilcox_df, result_row)
-      }
-    }
-  }
-}
-
-
 
 # SECTION 4: Overall Preference Index Summary -----------------------------
 
